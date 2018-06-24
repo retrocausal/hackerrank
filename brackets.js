@@ -21,69 +21,67 @@ process.stdin.on( 'end', _ => {
 function readLine() {
   return inputString[ currentLine++ ];
 }
+class Dictionary {
+  constructor() {
+    const Grammar = new Map();
+    Grammar.set( '{', '}' );
+    Grammar.set( '(', ')' );
+    Grammar.set( '[', ']' );
+    this.map = Grammar;
+  }
+  defineOpeners() {
+    const Collection = new Set();
+    for ( const [ key, value ] of this.map ) {
+      Collection.add( key );
+    }
+    this.openers = Collection;
+  }
+}
+class Stack {
+  constructor() {
+    this.struct = [];
+  }
+  top() {
+    return ( this.struct[ 0 ] ) ? this.struct[ 0 ] : -1;
+  }
+  add( Char ) {
+    return this.struct.unshift( Char );
+  }
+  destack() {
+    return this.struct.shift();
+  }
+  empty() {
+    return ( this.struct.length ) ? false : true;
+  }
+}
 
-const Stack = function () {
-  this.struct = [];
-};
-Stack.prototype.add = function ( element ) {
-  return this.struct.unshift( element );
-};
-Stack.prototype.top = function () {
-  return this.struct[ 0 ];
-};
-Stack.prototype.deStack = function () {
-  const top = this.struct.shift();
-  return top;
-};
-Stack.prototype.empty = function () {
-  return ( this.struct.length === 0 )
-};
-
-const Queue = function () {
-  this.struct = [];
-};
-
-Queue.prototype.add = function ( element ) {
-  return this.struct.push( element );
-};
-Queue.prototype.top = function () {
-  return this.struct[ 0 ];
-};
-Queue.prototype.deQueue = function () {
-  const top = this.struct.shift();
-  return top;
-};
-
-function parse( e ) {
-  const matches = new Map();
-  const Beginnings = new Stack();
-  const Endings = new Stack();
-  const Openers = new Set( [ '{', '[', '(' ] );
-  const Tailers = new Set( [ '}', ']', ')' ] );
-  matches.set( '{', '}' );
-  matches.set( '[', ']' );
-  matches.set( '(', ')' );
-  for ( let i = 0; i < e.length; i++ ) {
-    const char = e[ i ];
-    if ( Openers.has( char ) ) {
-      Beginnings.add( char );
+function parse( expression ) {
+  const Grammar = new Dictionary();
+  Grammar.defineOpeners();
+  const Stream = new Stack();
+  const Parser = expression[ Symbol.iterator ]();
+  let next = Parser.next();
+  while ( !next.done ) {
+    const Char = next.value;
+    if ( Grammar.openers.has( Char ) ) {
+      Stream.add( Char );
     } else {
-      const match = matches.get( Beginnings.top() );
-      if ( char !== match ) {
+      const lastOpened = Stream.top();
+      const Definition = ( Grammar.map.has( lastOpened ) ) ? Grammar.map.get( lastOpened ) : -1;
+      if ( Char === Definition ) {
+        Stream.destack();
+      } else {
         console.log( 'NO' );
         return false;
-      } else {
-        Beginnings.deStack();
       }
     }
+    next = Parser.next();
   }
-  if ( !Beginnings.empty() ) {
+  if ( !Stream.empty() ) {
     console.log( 'NO' );
     return false;
   }
-  //console.log(Beginnings);
   console.log( 'YES' );
-  return true;
 }
 
 function main() {
